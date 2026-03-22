@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install deps
+        run: |
+          python -m pip install -U pip
+          pip install -e ".[dev]"
+      - name: Run tests
+        run: python -m pytest
+      - name: Smoke test CLI
+        run: |
+          python -m kairos_terminal processes
+          python -m kairos_terminal demo --steps 60
+          python -m kairos_terminal price --process gbm --paths 2000
