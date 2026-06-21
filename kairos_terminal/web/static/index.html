@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kairos Terminal · 随机过程交易终端</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">◆ KAIROS<span>TERMINAL</span></div>
+
+  <div class="progress">
+    <div class="bar"><i id="progress-fill"></i></div>
+    <small id="progress-text">bar 0 / 500</small>
+  </div>
+
+  <div class="controls">
+    <button id="btn-play" class="ctrl">▶ 播放</button>
+    <button id="btn-step" class="ctrl">⏭ 单步</button>
+    <button id="btn-reset" class="ctrl">↺ 重置</button>
+    <label class="field">速度
+      <select id="speed">
+        <option value="1">1×</option>
+        <option value="2" selected>2×</option>
+        <option value="5">5×</option>
+        <option value="10">10×</option>
+      </select>
+    </label>
+    <label class="field">seed
+      <input id="seed" type="number" value="42" min="0" step="1">
+    </label>
+  </div>
+
+  <div class="acct">
+    <div><span>权益</span><b id="m-equity">—</b></div>
+    <div><span>现金</span><b id="m-cash">—</b></div>
+    <div><span>浮动盈亏</span><b id="m-upnl">—</b></div>
+    <div><span>收益率</span><b id="m-ret">—</b></div>
+    <div><span>最大回撤</span><b id="m-mdd">—</b></div>
+    <div><span>夏普</span><b id="m-sharpe">—</b></div>
+  </div>
+</header>
+
+<main>
+  <aside class="watchlist">
+    <div class="sec-head">
+      <h3>自选</h3>
+      <button id="btn-add" class="mini">＋ 品种</button>
+      <button id="btn-chain" class="mini" title="按当前标的生成期权链">＋ 期权链</button>
+    </div>
+    <ul id="watchlist" class="wl"></ul>
+
+    <div class="sec-head"><h3>价格过程</h3></div>
+    <div class="proc-card">
+      <div class="proc-now">
+        <span class="badge" id="proc-badge">—</span>
+        <p id="proc-desc">选择左侧品种后，可在此切换它的价格过程。</p>
+      </div>
+      <label class="field full">过程
+        <select id="proc-select"></select>
+      </label>
+      <div id="proc-params" class="params"></div>
+      <button id="btn-apply-proc" class="primary sm">应用（重建会话）</button>
+      <p class="hint">切换过程会按当前 seed 重新生成全部路径，账户清零。</p>
+    </div>
+  </aside>
+
+  <section class="chart-area">
+    <div class="chart-head">
+      <div class="sym">
+        <b id="sym">—</b>
+        <span id="sym-name"></span>
+        <span class="badge soft" id="sym-class"></span>
+      </div>
+      <div class="price">
+        <b id="last">—</b>
+        <span id="chg">—</span>
+      </div>
+      <div class="hover" id="hover">—</div>
+      <div class="tags" id="tags"></div>
+    </div>
+    <div class="greeks" id="greeks"></div>
+    <div class="canvas-wrap" id="chart-wrap">
+      <canvas id="chart"></canvas>
+      <div class="tooltip" id="chart-tip" hidden></div>
+    </div>
+
+    <div class="sub-head">
+      <h4>权益曲线</h4>
+      <span id="equity-note">—</span>
+    </div>
+    <canvas id="equity"></canvas>
+  </section>
+
+  <aside class="panel">
+    <section class="ticket">
+      <div class="sec-head"><h3>下单</h3><span class="muted" id="ticket-sym">—</span></div>
+      <div class="row">
+        <label>方向</label>
+        <div class="seg" id="side">
+          <button data-v="buy" class="on">买入</button>
+          <button data-v="sell">卖出</button>
+        </div>
+      </div>
+      <div class="row">
+        <label>类型</label>
+        <select id="otype">
+          <option value="market">市价</option>
+          <option value="limit">限价</option>
+          <option value="stop">止损</option>
+        </select>
+      </div>
+      <div class="row">
+        <label>数量</label>
+        <input id="qty" type="number" value="100" min="1" step="1">
+      </div>
+      <div class="row" id="row-price" hidden>
+        <label id="price-label">价格</label>
+        <input id="price" type="number" step="0.01">
+      </div>
+      <button id="btn-submit" class="primary">买入</button>
+      <p class="hint" id="ticket-hint">市价单将在下一根 bar 开盘成交。</p>
+    </section>
+
+    <section>
+      <div class="sec-head"><h3>持仓</h3></div>
+      <table class="grid" id="positions"><tbody></tbody></table>
+    </section>
+
+    <section>
+      <div class="sec-head"><h3>委托</h3></div>
+      <table class="grid" id="orders"><tbody></tbody></table>
+    </section>
+
+    <section>
+      <div class="sec-head">
+        <h3>策略</h3>
+        <button id="btn-lab" class="mini">定价实验室</button>
+      </div>
+      <select id="strategy"><option value="">（不挂载）</option></select>
+      <button id="btn-strategy" class="primary sm">应用策略</button>
+      <p class="hint">策略与手工下单走同一撮合通道，下一根 bar 成交。</p>
+    </section>
+  </aside>
+</main>
+
+<footer class="logbar">
+  <span class="logtag">日志</span>
+  <div id="logs"></div>
+</footer>
+
+<!-- 新增品种 -->
+<div class="modal" id="modal-add" hidden>
+  <div class="dialog">
+    <header><h3>新增品种</h3><button class="close" data-close="modal-add">✕</button></header>
+    <div class="dialog-body">
+      <div class="form-grid">
+        <label class="field">代码<input id="add-symbol" placeholder="如 000001 / ETH/USDT / 510300C4"></label>
+        <label class="field">名称<input id="add-name" placeholder="平安银行"></label>
+        <label class="field">资产类别
+          <select id="add-class">
+            <option value="stock">股票</option>
+            <option value="etf">ETF</option>
+            <option value="futures">期货</option>
+            <option value="crypto">加密货币</option>
+            <option value="option">期权</option>
+          </select>
+        </label>
+        <label class="field" id="add-s0-field">初始价<input id="add-s0" type="number" value="100" step="0.01"></label>
+        <label class="field" id="add-mult-field">乘数<input id="add-mult" type="number" value="1" step="1"></label>
+        <label class="field" id="add-margin-field">保证金率<input id="add-margin" type="number" value="1" step="0.01"></label>
+        <label class="field">最小变动<input id="add-tick" type="number" value="0.01" step="0.001"></label>
+        <label class="field">可做空
+          <select id="add-short"><option value="false">否</option><option value="true">是</option></select>
+        </label>
+      </div>
+
+      <div id="add-option-box" hidden>
+        <div class="form-grid">
+          <label class="field">期权标的<select id="add-opt-under"></select></label>
+          <label class="field">行权价<input id="add-opt-strike" type="number" step="0.01"></label>
+          <label class="field">到期（第几根 bar）<input id="add-opt-expiry" type="number" value="120" step="1"></label>
+          <label class="field">方向
+            <select id="add-opt-kind"><option value="call">看涨 Call</option><option value="put">看跌 Put</option></select>
+          </label>
+          <label class="field">隐含波动率<input id="add-opt-iv" type="number" value="0.2" step="0.01"></label>
+          <label class="field">合约乘数<input id="add-opt-mult" type="number" value="10000" step="1"></label>
+        </div>
+        <p class="hint">期权价格由标的行情 + Black-Scholes 逐 bar 推导，到期按内在价值现金交割。</p>
+      </div>
+
+      <div id="add-proc-box">
+        <label class="field full">价格过程<select id="add-proc"></select></label>
+        <div id="add-params" class="params"></div>
+        <label class="field full">数据来源
+          <select id="add-source">
+            <option value="process">参数化过程（上方选择）</option>
+            <option value="dataset">本地 CSV（历史块重采样）</option>
+          </select>
+        </label>
+        <div id="add-dataset-box" hidden>
+          <label class="field full">数据集<select id="add-dataset"></select></label>
+          <label class="field">块长度（交易日）<input id="add-block" type="number" value="20" step="1"></label>
+          <p class="hint" id="add-dataset-hint">扫描 KAIROS_TERMINAL_DATA / ./data / ../kairos-data/data</p>
+        </div>
+      </div>
+    </div>
+    <footer>
+      <button class="ctrl" data-close="modal-add">取消</button>
+      <button class="primary" id="btn-add-confirm">创建</button>
+    </footer>
+  </div>
+</div>
+
+<!-- 定价实验室 -->
+<div class="drawer" id="drawer-lab" hidden>
+  <div class="drawer-body">
+    <header>
+      <h3>定价实验室</h3>
+      <button class="close" data-close="drawer-lab">✕</button>
+    </header>
+    <div class="lab-grid">
+      <label class="field">品种<select id="lab-symbol"></select></label>
+      <label class="field">类型<select id="lab-kind"><option value="call">看涨 Call</option><option value="put">看跌 Put</option></select></label>
+      <label class="field">现价<input id="lab-spot" type="number" step="0.01"></label>
+      <label class="field">行权价<input id="lab-strike" type="number" step="0.01"></label>
+      <label class="field">到期(年)<input id="lab-maturity" type="number" value="1" step="0.05"></label>
+      <label class="field">无风险利率<input id="lab-rate" type="number" value="0.02" step="0.005"></label>
+      <label class="field">波动率<input id="lab-vol" type="number" value="0.2" step="0.01"></label>
+      <label class="field">期权市价<input id="lab-price" type="number" step="0.01" placeholder="留空则用BS价"></label>
+      <label class="field">对冲波动率<input id="lab-hvol" type="number" value="0.2" step="0.01"></label>
+      <label class="field">路径数<input id="lab-paths" type="number" value="20000" step="1000"></label>
+      <label class="field">MC 步数<input id="lab-steps" type="number" value="252" step="1"></label>
+    </div>
+    <div class="lab-actions">
+      <button class="ctrl" data-method="bs">Black-Scholes</button>
+      <button class="ctrl" data-method="binomial">二叉树</button>
+      <button class="ctrl" data-method="mc">蒙特卡洛</button>
+      <button class="ctrl" data-method="compare">三法对照</button>
+      <button class="ctrl" data-method="hedge">Delta 对冲</button>
+      <button class="ctrl" data-method="implied_vol">隐含波动率</button>
+    </div>
+    <div id="lab-result" class="lab-result">选择一种方法计算。</div>
+  </div>
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>
