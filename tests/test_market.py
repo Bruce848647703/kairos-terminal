@@ -1,7 +1,6 @@
 """行情引擎测试：K 线构造、无未来函数撮合、各类委托的成交价。"""
 from __future__ import annotations
 
-import numpy as np
 import pytest
 
 from kairos_terminal.instruments import Instrument
@@ -126,7 +125,7 @@ def test_duplicate_symbols_rejected():
 
 
 def test_strategy_exception_does_not_break_stepping():
-    from kairos_terminal.strategy import OrderIntent, Strategy
+    from kairos_terminal.strategy import Strategy
 
     class Broken(Strategy):
         name = "broken"

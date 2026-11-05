@@ -91,7 +91,6 @@ class HestonProcess(PriceProcess):
         mu = float(self["mu"])
         v0, kappa = float(self["v0"]), float(self["kappa"])
         theta, xi, rho = float(self["theta"]), float(self["xi"]), float(self["rho"])
-        sqrt_dt = np.sqrt(dt)
 
         log_s = np.zeros((n_paths, n_steps + 1))
         var = np.full((n_paths, n_steps + 1), v0)

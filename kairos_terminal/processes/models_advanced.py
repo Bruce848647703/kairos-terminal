@@ -154,7 +154,6 @@ class GarchProcess(PriceProcess):
         rng = self._rng(seed)
         mu = float(self["mu"])
         omega, alpha, beta = float(self["omega"]), float(self["alpha"]), float(self["beta"])
-        sqrt_dt = np.sqrt(dt)
 
         variance = np.full(n_paths, omega / (1.0 - alpha - beta))
         log_path = np.zeros((n_paths, n_steps + 1))
@@ -213,7 +212,6 @@ class TwoFactorVolProcess(PriceProcess):
         k1, t1, x1 = float(self["kappa1"]), float(self["theta1"]), float(self["xi1"])
         k2, t2, x2 = float(self["kappa2"]), float(self["theta2"]), float(self["xi2"])
         rho1, rho2 = float(self["rho1"]), float(self["rho2"])
-        sqrt_dt = np.sqrt(dt)
 
         log_path = np.zeros((n_paths, n_steps + 1))
         for t in range(1, n_steps + 1):

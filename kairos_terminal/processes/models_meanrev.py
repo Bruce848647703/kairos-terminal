@@ -73,7 +73,6 @@ class CIRProcess(PriceProcess):
         rng = self._rng(seed)
         kappa, theta = float(self["kappa"]), float(self["theta"])
         sigma = float(self["sigma"])
-        sqrt_dt = np.sqrt(dt)
 
         x = np.empty((n_paths, n_steps + 1))
         x[:, 0] = s0

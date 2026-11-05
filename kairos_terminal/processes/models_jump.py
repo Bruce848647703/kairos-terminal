@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from .base import DEFAULT_DT, ParamSpec, PriceProcess, require_positive
+from .base import DEFAULT_DT, ParamSpec, PriceProcess
 from .models_diffusion import HestonProcess
 from .registry import register
 

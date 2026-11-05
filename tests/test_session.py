@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import pytest
 
-from kairos_terminal.session import Session, default_instruments
+from kairos_terminal.session import Session
 
 
 def test_default_instruments_cover_multiple_processes():

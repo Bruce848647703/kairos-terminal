@@ -23,7 +23,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, ClassVar, Dict, List, Optional, Sequence, Tuple
+from typing import Any, ClassVar, Dict, Optional, Tuple
 
 import numpy as np
 

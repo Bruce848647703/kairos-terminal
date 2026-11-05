@@ -3,9 +3,9 @@ from __future__ import annotations
 
 import argparse
 import sys
-from typing import Any, List, Optional
+from typing import List, Optional
 
-from .analytics import performance_summary
+from . import __version__
 from .processes import create as create_process
 from .processes import describe_all, keys as process_keys
 
@@ -19,6 +19,7 @@ def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="kairos-terminal",
         description="随机过程驱动的交易终端：价格过程可插拔，用于随机过程与金融数学定价研究。")
+    parser.add_argument("--version", action="version", version=f"kairos-terminal {__version__}")
     sub = parser.add_subparsers(dest="command")
 
     serve = sub.add_parser("serve", help="启动 Web 终端（默认）")
@@ -176,7 +177,6 @@ def _cmd_price(args: argparse.Namespace) -> int:
 
 
 def _cmd_simulate(args: argparse.Namespace) -> int:
-    from pathlib import Path
 
     from . import datasets
 
@@ -238,10 +238,12 @@ def _cmd_processes(_: argparse.Namespace) -> int:
 def main(argv: Optional[List[str]] = None) -> int:
     argv_list = list(sys.argv[1:] if argv is None else argv)
     parser = _build_parser()
-    if not argv_list or argv_list[0].startswith("-"):   # 不带子命令时等价于 serve
-        args = parser.parse_args(["serve"] + argv_list)
-    else:
-        args = parser.parse_args(argv_list)
+    if not argv_list:
+        argv_list = ["serve"]
+    elif argv_list[0] not in ("-h", "--help", "--version") and argv_list[0].startswith("-"):
+        # 不带子命令时等价于 serve；但 -h/--help/--version 必须留给顶层解析器
+        argv_list = ["serve"] + argv_list
+    args = parser.parse_args(argv_list)
     if args.command == "serve":
         return _cmd_serve(args)
     return {
